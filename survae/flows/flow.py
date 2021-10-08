@@ -3,6 +3,7 @@ from torch import nn
 from collections.abc import Iterable
 from survae.distributions import Distribution
 from survae.transforms import Transform
+from survae.utils import sum_except_batch
 
 
 class Flow(Distribution):
@@ -30,6 +31,22 @@ class Flow(Distribution):
             log_prob += ldj
         log_prob += self.base_dist.log_prob(x)
         return log_prob
+
+    def forward_transform(self, x):
+        ldj = torch.zeros(x.shape[0], device=x.device)
+        for transform in self.transforms:
+            x, ildj = transform(x)
+            ldj += ildj
+
+        return x, ldj
+
+
+    def inverse_transform(self, x):
+        for transform in reversed(self.transforms):
+            x = transform.inverse(x)
+
+        return x
+
 
     def sample(self, num_samples):
         z = self.base_dist.sample(num_samples)
