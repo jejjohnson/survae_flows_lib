@@ -1,3 +1,6 @@
 *.egg-info
 __pycache__
 data_path
+*\lightning_logs/
+*.ckpt
+*\.ipynb_checkpoints/
