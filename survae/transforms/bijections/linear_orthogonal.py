@@ -44,6 +44,24 @@ class LinearHouseholder(Bijection):
 
 
 class FastHouseholder(Bijection):
+    """
+    Linear bijection y=Rx with an orthogonal parameterization via the Householder transformation. This
+    restricts the form of the rotation matrix, R, to be orthogonal which enables a very cheap Jacobian
+    calculation, i.e. it's zero.
+
+    Costs:
+        forward = O(BD^2)
+        inverse = O(BD^2 + D^3)
+        ldj = O(1)
+    where:
+        B = batch size
+        D = number of features
+
+    Args:
+        num_features: int, Number of features in the input and output.
+        orthogonal_init: bool, if True initialize weights to be a random orthogonal matrix (default=True).
+    """
+
     def __init__(
         self,
         num_features: int,

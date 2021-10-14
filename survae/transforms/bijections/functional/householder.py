@@ -1,7 +1,7 @@
 import torch
 
 
-def construct_householder_matrix(V):
+def construct_householder_matrix(V: torch.Tensor) -> torch.Tensor:
     n_reflections, n_channels = V.shape
 
     I = torch.eye(n_channels, dtype=V.dtype, device=V.device)
@@ -18,7 +18,7 @@ def construct_householder_matrix(V):
     return Q
 
 
-def fast_householder_matrix(v, stride=2):
+def fast_householder_matrix(v: torch.Tensor, stride: int = 2) -> torch.Tensor:
     """
     Fast product of a series of Householder matrices. This implementation is oriented to the one introducesd in:
     https://invertibleworkshop.github.io/accepted_papers/pdfs/10.pdf

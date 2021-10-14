@@ -4,3 +4,4 @@ data_path
 *\lightning_logs/
 *.ckpt
 *\.ipynb_checkpoints/
+\data/

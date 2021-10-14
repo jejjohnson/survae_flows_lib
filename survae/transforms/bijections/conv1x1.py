@@ -8,6 +8,7 @@ from survae.transforms.bijections import Bijection
 from survae.transforms.bijections.functional.householder import (
     construct_householder_matrix,
 )
+from survae.transforms.bijections.functional.householder import fast_householder_matrix
 
 
 class Conv1x1(Bijection):
@@ -85,7 +86,7 @@ class Conv1x1(Bijection):
         return x
 
 
-class Conv1x1Householder(Conv1x1):
+class Conv1x1Householder(Bijection):
     """
     Invertible 1x1 Convolution [1].
     The weight matrix is initialized as a random rotation matrix
@@ -109,19 +110,50 @@ class Conv1x1Householder(Conv1x1):
         self,
         num_channels: int,
         num_householder: int = 2,
-        orthogonal_init: bool = True,
+        fixed: bool = False,
     ):
-        super().__init__(num_channels=num_channels, orthogonal_init=orthogonal_init)
+        super().__init__()
 
-        self.num_householder = num_householder
+        # init close to identity
+        weight = torch.eye(num_channels, num_householder)
+        weight += torch.randn_like(weight) * 0.1
+        weight = weight.transpose(-1, -2)
+
+        self.weight = nn.Parameter(weight)
+
+        nn.init.orthogonal_(self.weight)
+
+        if fixed:
+            self.weight = fast_householder_matrix(self.weight)
+            self.weight = nn.Parameter(self.weight, requires_grad=False)
+            self.register_parameter("weight", self.weight)
+
+    def _conv(self, weight, v):
+
+        # Get tensor dimensions
+        _, channel, *features = v.shape
+        n_feature_dims = len(features)
+
+        # expand weight matrix
+        fill = (1,) * n_feature_dims
+        weight = weight.view(channel, channel, *fill)
+
+        if n_feature_dims == 1:
+            return F.conv1d(v, weight)
+        elif n_feature_dims == 2:
+            return F.conv2d(v, weight)
+        elif n_feature_dims == 3:
+            return F.conv3d(v, weight)
+        else:
+            raise ValueError(f"Got {n_feature_dims}d tensor, expected 1d, 2d, or 3d")
 
     def _logdet(self, x_shape):
         n_batches, _, *dims = x_shape
-        if self.slogdet_cpu:
-            ldj_per_pixel = torch.zeros_like(self.weight.to("cpu"))
-        else:
-            ldj_per_pixel = torch.zeros_like(self.weight)
+
+        ldj_per_pixel = torch.zeros_like(self.weight)
+
         ldj = ldj_per_pixel * reduce(mul, dims)
+
         return ldj.expand([n_batches]).to(self.weight.device)
 
     def forward(self, x):
@@ -129,11 +161,9 @@ class Conv1x1Householder(Conv1x1):
         # construct householder matrix
         Q = construct_householder_matrix(self.weight)
 
-        print(x.shape, Q.shape)
-
         z = self._conv(Q, x)
-        ldj = self._logdet(x.shape)
-        return z, ldj
+        # ldj = self._logdet(x.shape)
+        return z, 0
 
     def inverse(self, z):
         # construct householder matrix
