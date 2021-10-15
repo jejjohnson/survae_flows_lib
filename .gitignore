@@ -129,3 +129,5 @@ MNIST
 .DS_Store
 \data/
 *data_path
+\wandb/
+*.ckpt
