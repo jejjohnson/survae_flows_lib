@@ -128,4 +128,4 @@ lightning_logs/
 MNIST
 .DS_Store
 \data/
-data_path
+*data_path
