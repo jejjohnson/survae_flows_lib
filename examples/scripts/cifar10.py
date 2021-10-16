@@ -30,8 +30,15 @@ import corner
 # logging
 import wandb
 
+CONFIG = {"dataset": "cifar10"}
+## Initialize wandb logger
+wandb_logger = WandbLogger(
+    project="gfs4ml",
+    entity="ipl_uv",
+)
+wandb_logger.experiment.config.update(CONFIG)
 
-# %%
+
 from pl_bolts.datasets import CIFAR10
 from pl_bolts.datamodules import CIFAR10DataModule
 from torchvision.transforms import ToTensor, Compose
@@ -83,181 +90,256 @@ from survae.transforms.surjections.slice import Slice
 n_channels, height, width = 3, 32, 32
 total_dims = np.prod((n_channels, height, width))
 
+flow_model = "example_aug"
 
 # transforms
-num_mixtures = 8
+if flow_model == "gf":
+    num_mixtures = 8
 
-transforms = [
-    UniformDequantization(num_bits=8),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(3, 3),
-    # (3,32,32) -> (12,16,16)
-    Squeeze2d(),
-    # (12,16,16) -> (6,16,16)
-    Slice(StandardNormal((6, 16, 16)), num_keep=6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(6, 6),
-    # (6,16,16) -> (24,8,8)
-    Squeeze2d(),
-    # (24,8,8) -> (12,8,8)
-    Slice(StandardNormal((12, 8, 8)), num_keep=12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(12, 12),
-    # (12,8,8) -> (48,4,4)
-    Squeeze2d(),
-    # (48,4,4) -> (24,4,4)
-    Slice(StandardNormal((24, 4, 4)), num_keep=24),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(24, 12),
-    # (24,4,4) -> (96,2,2)
-    Squeeze2d(),
-    # (96,2,2) -> (48,2,2)
-    Slice(StandardNormal((48, 2, 2)), num_keep=48),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
-    InverseGaussCDF(),
-    Conv1x1Householder(48, 12),
-    # (48,2,2) -> (192,)
-    Reshape((48, 2, 2), (np.prod((48, 2, 2)),)),
-]
+    transforms = [
+        UniformDequantization(num_bits=8),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        GaussianMixtureCDF((3, 32, 32), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(3, 3),
+        # (3,32,32) -> (12,16,16)
+        Squeeze2d(),
+        # (12,16,16) -> (6,16,16)
+        Slice(StandardNormal((6, 16, 16)), num_keep=6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        GaussianMixtureCDF((6, 16, 16), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(6, 6),
+        # (6,16,16) -> (24,8,8)
+        Squeeze2d(),
+        # (24,8,8) -> (12,8,8)
+        Slice(StandardNormal((12, 8, 8)), num_keep=12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        GaussianMixtureCDF((12, 8, 8), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(12, 12),
+        # (12,8,8) -> (48,4,4)
+        Squeeze2d(),
+        # (48,4,4) -> (24,4,4)
+        Slice(StandardNormal((24, 4, 4)), num_keep=24),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        GaussianMixtureCDF((24, 4, 4), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(24, 12),
+        # (24,4,4) -> (96,2,2)
+        Squeeze2d(),
+        # (96,2,2) -> (48,2,2)
+        Slice(StandardNormal((48, 2, 2)), num_keep=48),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        GaussianMixtureCDF((48, 2, 2), num_mixtures=num_mixtures),
+        InverseGaussCDF(),
+        Conv1x1Householder(48, 12),
+        # (48,2,2) -> (192,)
+        Reshape((48, 2, 2), (np.prod((48, 2, 2)),)),
+    ]
 
-# base distribution
-base_dist = StandardNormal((np.prod((48, 2, 2)),))
+    base_dist = StandardNormal((np.prod((48, 2, 2)),))
+
+elif flow_model == "example_aug":
+
+    from survae.nn.nets import DenseNet
+    from survae.transforms import AffineCouplingBijection, ActNormBijection2d, Conv1x1
+    from survae.distributions import StandardNormal, StandardUniform
+    from survae.nn.layers import ElementwiseParams2d
+    from survae.transforms import UniformDequantization, Augment, Squeeze2d, Slice
+
+    def net(channels):
+        return nn.Sequential(
+            DenseNet(
+                in_channels=channels // 2,
+                out_channels=channels,
+                num_blocks=1,
+                mid_channels=64,
+                depth=8,
+                growth=16,
+                dropout=0.0,
+                gated_conv=True,
+                zero_init=True,
+            ),
+            ElementwiseParams2d(2),
+        )
+
+    transforms = [
+        UniformDequantization(num_bits=8),
+        Augment(StandardUniform((3, 32, 32)), x_size=3),
+        AffineCouplingBijection(net(6)),
+        ActNormBijection2d(6),
+        Conv1x1(6),
+        AffineCouplingBijection(net(6)),
+        ActNormBijection2d(6),
+        Conv1x1(6),
+        AffineCouplingBijection(net(6)),
+        ActNormBijection2d(6),
+        Conv1x1(6),
+        AffineCouplingBijection(net(6)),
+        ActNormBijection2d(6),
+        Conv1x1(6),
+        Squeeze2d(),
+        Slice(StandardNormal((12, 16, 16)), num_keep=12),
+        AffineCouplingBijection(net(12)),
+        ActNormBijection2d(12),
+        Conv1x1(12),
+        AffineCouplingBijection(net(12)),
+        ActNormBijection2d(12),
+        Conv1x1(12),
+        AffineCouplingBijection(net(12)),
+        ActNormBijection2d(12),
+        Conv1x1(12),
+        AffineCouplingBijection(net(12)),
+        ActNormBijection2d(12),
+        Conv1x1(12),
+        Squeeze2d(),
+        Slice(StandardNormal((24, 8, 8)), num_keep=24),
+        AffineCouplingBijection(net(24)),
+        ActNormBijection2d(24),
+        Conv1x1(24),
+        AffineCouplingBijection(net(24)),
+        ActNormBijection2d(24),
+        Conv1x1(24),
+        AffineCouplingBijection(net(24)),
+        ActNormBijection2d(24),
+        Conv1x1(24),
+        AffineCouplingBijection(net(24)),
+        ActNormBijection2d(24),
+        Conv1x1(24),
+    ]
+
+    base_dist = StandardNormal((24, 8, 8))
+
+else:
+    raise ValueError(f"Unrecognized flow_model argument: {flow_model}")
 
 # flow model
 model = Flow(base_dist=base_dist, transforms=transforms)
@@ -301,6 +383,7 @@ x_approx = model.inverse_transform(z[:32])
 
 show(make_grid(x_approx[:32] / 255))
 
+z = rearrange(z, "B C H W -> B (C H W)")
 
 fig = corner.corner(z.detach().numpy()[:, :10])
 
@@ -352,7 +435,14 @@ learn = LearnerImage(model)
 n_epochs = 50
 
 # initialize trainer
-trainer = pl.Trainer(min_epochs=1, max_epochs=n_epochs, gpus="0", logger=wandb_logger)
+trainer = pl.Trainer(
+    min_epochs=1,
+    max_epochs=n_epochs,
+    gpus="0",
+    logger=wandb_logger,
+    gradient_clip_val=1.0,
+    gradient_clip_algorithm="norm",
+)
 
 # train model
 trainer.fit(learn)
@@ -362,8 +452,10 @@ trainer.fit(learn)
 
 z_latent, ldj = model.forward_transform(test_x)
 
+z_latent = rearrange(z_latent, "B C H W -> B (C H W)")
 
 fig = corner.corner(z_latent.detach().numpy()[:, :10])
+
 
 # SAMPLING
 
