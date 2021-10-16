@@ -12,6 +12,8 @@ dependencies:
 - pandas>=1.1            # Data structure
 - scikit-learn>0.23      # Machine Learning
 - scikit-image>0.17      # Image Processing
+- conda-forge::python-picard
+- conda-forge::statsmodels
 # Plotting Libraries
 - matplotlib>=3.3        # standard plotting library
 - conda-forge::cartopy>=0.18
