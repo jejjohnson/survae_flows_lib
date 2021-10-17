@@ -280,12 +280,14 @@ class LogisticMixtureCDF(GaussianMixtureCDF):
     def __init__(
         self,
         input_shape: Tuple[int],
+        X=None,
         num_mixtures: int = 8,
         eps: float = 1e-10,
         max_iters: int = 100,
     ):
         super(LogisticMixtureCDF, self).__init__(
             input_shape=input_shape,
+            X=X,
             num_mixtures=num_mixtures,
             eps=eps,
             max_iters=max_iters,
