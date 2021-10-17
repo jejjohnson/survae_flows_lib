@@ -23,6 +23,9 @@ from nflows.transforms.splines.rational_quadratic import (
     DEFAULT_MIN_BIN_WIDTH,
     DEFAULT_MIN_DERIVATIVE,
 )
+from survae.transforms.bijections.functional.mixtures.gaussian_mixture import (
+    init_marginal_mixture_weights,
+)
 
 
 class LeakyReLU(Bijection):
@@ -216,6 +219,7 @@ class GaussianMixtureCDF(Bijection):
     def __init__(
         self,
         input_shape: Tuple[int],
+        X=None,
         num_mixtures: int = 8,
         eps: float = 1e-10,
         max_iters: int = 100,
@@ -225,9 +229,26 @@ class GaussianMixtureCDF(Bijection):
         self.num_mixtures = num_mixtures
         self.max_iters = max_iters
         self.eps = eps
-        self.means = nn.Parameter(torch.randn(param_shapes), requires_grad=True)
-        self.log_scales = nn.Parameter(torch.zeros(param_shapes), requires_grad=True)
-        self.logit_weights = nn.Parameter(torch.zeros(param_shapes), requires_grad=True)
+        if X is not None:
+            # data dependent initialization
+            if isinstance(X, torch.Tensor):
+                X = X.cpu().numpy()
+            logit_weights, mus, scales = init_marginal_mixture_weights(X, num_mixtures)
+            self.means = nn.Parameter(torch.FloatTensor(mus), requires_grad=True)
+            self.log_scales = nn.Parameter(
+                torch.FloatTensor(np.log(scales)), requires_grad=True
+            )
+            self.logit_weights = nn.Parameter(
+                torch.FloatTensor(logit_weights), requires_grad=True
+            )
+        else:
+            self.means = nn.Parameter(torch.randn(param_shapes), requires_grad=True)
+            self.log_scales = nn.Parameter(
+                torch.zeros(param_shapes), requires_grad=True
+            )
+            self.logit_weights = nn.Parameter(
+                torch.zeros(param_shapes), requires_grad=True
+            )
 
     def _elementwise(self, inputs, inverse):
 
