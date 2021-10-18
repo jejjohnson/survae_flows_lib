@@ -8,25 +8,12 @@ dependencies:
 # Standard Libraries
 - numpy>=1.19            # Numerical Linear Algebra
 - scipy>=1.5             # Scientific Computing
-- xarray>=0.16           # Data structures
-- pandas>=1.1            # Data structure
 - scikit-learn>0.23      # Machine Learning
-- scikit-image>0.17      # Image Processing
-- conda-forge::python-picard
-- conda-forge::statsmodels
 # Plotting Libraries
 - matplotlib>=3.3        # standard plotting library
-- conda-forge::cartopy>=0.18
 - seaborn>=0.11          # Stats viz library
-- plotly::plotly>=4.13.0
-- conda-forge::folium>=0.11
-# Storage
-- h5py>=2.10              # standard large storage h5
-- conda-forge::zarr>=2.5
 # GUI
 - conda-forge::tqdm>=4.50              # 
-# Earthy oackages
-- conda-forge::rasterio>=1.1
 # Pytorch
 - pytorch::pytorch
 - pytorch::torchvision
@@ -37,13 +24,14 @@ dependencies:
 - pip:
     # pytorch lightning libraries
     - pytorch-lightning
+    - lightning-bolts
+    - pytorch_eo
     # Normalizing Flows Libraries
     - nflows
     - pyro-ppl
     - einops
     # personal directories
     - "git+https://github.com/VLL-HD/FrEIA.git"
-    - "git+https://github.com/earthpulse/pytorch_eo.git"
     # Server/Logging
     - wandb
     - plotly

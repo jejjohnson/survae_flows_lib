@@ -31,6 +31,7 @@ class LinearHouseholder(Bijection):
         self.nflows_layer = HouseholderSequence(
             features=num_features, num_transforms=num_householder
         )
+        nn.init.orthogonal_(self.nflows_layer.q_vectors)
 
     def forward(self, x):
 
@@ -77,7 +78,7 @@ class FastHouseholder(Bijection):
 
         self.weight = nn.Parameter(weight)
 
-        nn.init.orthogonal_(self.weight)
+        # nn.init.orthogonal_(self.weight)
 
         if fixed:
             self.weight = fast_householder_matrix(self.weight)
