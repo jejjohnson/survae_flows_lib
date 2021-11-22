@@ -4,7 +4,7 @@ channels:
 - pytorch
 - conda-forge
 dependencies:
-- python=3.8
+- python=3.9
 # Standard Libraries
 - numpy>=1.19            # Numerical Linear Algebra
 - scipy>=1.5             # Scientific Computing
@@ -19,18 +19,22 @@ dependencies:
 - conda-forge::tqdm>=4.50              # 
 # Earthy oackages
 - conda-forge::rasterio>=1.1
-# Pytorch
-- pytorch::pytorch>=1.9
-- pytorch::torchvision>=0.10
-- pytorch::torchaudio>=0.9
-- cudatoolkit=10.2
+# PYTORCH
+- pytorch::pytorch           # tensor library
+- pytorch::torchvision       # pytorch visual library
+- pytorch::torchaudio
+- pytorch::cudatoolkit=10.2
 # pip
 - pip>=20.2
 - pip:
-    # pytorch
+    # PYTORCH ECOSYSTEM
+    - pyro-ppl        # probabilistic programming library
+    - gpytorch        # Gaussian Processes
     - pytorch-lightning
     - lightning-bolts
+    - lightning-flash
     - pytorch_eo
+    - torchgeo
     # Normalizing Flows Libraries
     - nflows
     - pyro-ppl
@@ -48,3 +52,5 @@ dependencies:
     - ipykernel
     - ipywidgets
     - pyprojroot
+    # Plots
+    - corner
