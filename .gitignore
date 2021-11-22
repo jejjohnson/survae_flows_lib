@@ -34,7 +34,6 @@ default/
 data/
 test_tube_logs/
 test_tube_data/
-datasets/
 model_weights/
 tests/save_dir  
 tests/tests_tt_dir/
@@ -127,7 +126,6 @@ venv.bak/
 lightning_logs/
 MNIST
 .DS_Store
-~/data/
 *data_path
 \wandb/
 *.ckpt
