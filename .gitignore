@@ -127,7 +127,7 @@ venv.bak/
 lightning_logs/
 MNIST
 .DS_Store
-data/
+~/data/
 *data_path
 \wandb/
 *.ckpt
