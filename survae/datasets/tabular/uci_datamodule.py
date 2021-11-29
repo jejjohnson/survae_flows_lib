@@ -9,7 +9,7 @@ from torchvision.transforms import transforms
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from survae.data.tabular.utils import get_data_path
+from survae.datasets.tabular.utils import get_data_path
 import os
 
 
