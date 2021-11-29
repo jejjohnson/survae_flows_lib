@@ -2,7 +2,7 @@ from pyprojroot import here
 from pathlib import Path
 
 # spyder up to find the root
-root = here(project_files=[".here"])
+root = here(project_files=[".home"])
 
 DATA_PATH = Path(root).joinpath("data")
 

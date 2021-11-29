@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 from .utils import get_data_path
 import os
-from survae.data.tabular.uci_datamodule import UCIDataModule
+from survae.datasets.tabular.uci_datamodule import UCIDataModule
 
 
 class MiniBooNEDataModule(UCIDataModule):

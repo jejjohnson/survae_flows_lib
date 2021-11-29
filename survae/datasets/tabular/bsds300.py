@@ -6,9 +6,9 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 from pathlib import Path
-from survae.data.tabular.utils import get_data_path
+from survae.datasets.tabular.utils import get_data_path
 import os
-from survae.data.tabular.uci_datamodule import UCIDataModule
+from survae.datasets.tabular.uci_datamodule import UCIDataModule
 
 
 class BSDS300DataModule(UCIDataModule):
