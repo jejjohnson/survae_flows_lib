@@ -9,16 +9,17 @@ from survae.transforms.bijections.functional.kernel.logistic import (
     logistic_kernel_transform,
 )
 from survae.utils import sum_except_batch
+from survae.transforms.bijections.functional import splines
 from survae.transforms.bijections import Bijection
-from survae.utils import sum_except_batch
+from survae.utils import sum_except_batch, share_across_batch
 from survae.transforms.bijections.functional.mixtures import (
     gaussian_mixture_transform,
     logistic_mixture_transform,
 )
 
 
-from nflows.transforms import PiecewiseRationalQuadraticCDF
-from nflows.transforms.splines.rational_quadratic import (
+# from nflows.transforms import PiecewiseRationalQuadraticCDF
+from survae.transforms.bijections.functional.splines.rational_quadratic import (
     DEFAULT_MIN_BIN_HEIGHT,
     DEFAULT_MIN_BIN_WIDTH,
     DEFAULT_MIN_DERIVATIVE,
@@ -366,26 +367,101 @@ class RQSplineCDF(Bijection):
         min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
         min_derivative=DEFAULT_MIN_DERIVATIVE,
     ):
-        super(RQSplineCDF, self).__init__()
+        super().__init__()
 
-        self.nflows_transform = PiecewiseRationalQuadraticCDF(
-            shape=shape,
-            num_bins=num_bins,
-            tails=tails,
-            tail_bound=tail_bound,
-            identity_init=identity_init,
-            min_bin_width=min_bin_width,
-            min_bin_height=min_bin_height,
-            min_derivative=min_derivative,
+        self.min_bin_width = min_bin_width
+        self.min_bin_height = min_bin_height
+        self.min_derivative = min_derivative
+
+        self.tail_bound = tail_bound
+        self.tails = tails
+
+        if isinstance(shape, int):
+            shape = (shape,)
+        if identity_init:
+            self.unnormalized_widths = nn.Parameter(torch.zeros(*shape, num_bins))
+            self.unnormalized_heights = nn.Parameter(torch.zeros(*shape, num_bins))
+
+            constant = np.log(np.exp(1 - min_derivative) - 1)
+            num_derivatives = (
+                (num_bins - 1) if self.tails == "linear" else (num_bins + 1)
+            )
+            self.unnormalized_derivatives = nn.Parameter(
+                constant * torch.ones(*shape, num_derivatives)
+            )
+        else:
+            self.unnormalized_widths = nn.Parameter(torch.rand(*shape, num_bins))
+            self.unnormalized_heights = nn.Parameter(torch.rand(*shape, num_bins))
+
+            num_derivatives = (
+                (num_bins - 1) if self.tails == "linear" else (num_bins + 1)
+            )
+            self.unnormalized_derivatives = nn.Parameter(
+                torch.rand(*shape, num_derivatives)
+            )
+
+    def _spline(self, inputs, inverse=False):
+        batch_size = inputs.shape[0]
+
+        unnormalized_widths = share_across_batch(self.unnormalized_widths, batch_size)
+        unnormalized_heights = share_across_batch(
+            self.unnormalized_heights, batch_size
+        )
+        unnormalized_derivatives = share_across_batch(
+            self.unnormalized_derivatives, batch_size
         )
 
+        if self.tails is None:
+            spline_fn = splines.rational_quadratic_spline
+            spline_kwargs = {}
+        else:
+            spline_fn = splines.unconstrained_rational_quadratic_spline
+            spline_kwargs = {"tails": self.tails, "tail_bound": self.tail_bound}
+
+        outputs, logabsdet = spline_fn(
+            inputs=inputs,
+            unnormalized_widths=unnormalized_widths,
+            unnormalized_heights=unnormalized_heights,
+            unnormalized_derivatives=unnormalized_derivatives,
+            inverse=inverse,
+            min_bin_width=self.min_bin_width,
+            min_bin_height=self.min_bin_height,
+            min_derivative=self.min_derivative,
+            **spline_kwargs
+        )
+
+        return outputs, sum_except_batch(logabsdet)
+    
     def forward(self, x):
-        z, ldj = self.nflows_transform.forward(x)
+        z, ldj = self._spline(x, inverse=False)
 
         return z, ldj
 
     def inverse(self, z):
 
-        x, _ = self.nflows_transform.inverse(z)
+        x, _ = self._spline(z, inverse=True)
 
         return x
+
+
+        # self.nflows_transform = PiecewiseRationalQuadraticCDF(
+        #     shape=shape,
+        #     num_bins=num_bins,
+        #     tails=tails,
+        #     tail_bound=tail_bound,
+        #     identity_init=identity_init,
+        #     min_bin_width=min_bin_width,
+        #     min_bin_height=min_bin_height,
+        #     min_derivative=min_derivative,
+        # )
+
+#     def forward(self, x):
+#         z, ldj = self.nflows_transform.forward(x)
+
+#         return z, ldj
+
+#     def inverse(self, z):
+
+#         x, _ = self.nflows_transform.inverse(z)
+
+#         return x
