@@ -46,3 +46,5 @@ dependencies:
     - ipykernel
     - ipywidgets
     - pyprojroot
+    # Plotting
+    - corner
