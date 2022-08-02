@@ -1,24 +1,34 @@
 import torch
 
 
-def construct_householder_matrix(V: torch.Tensor) -> torch.Tensor:
-    n_reflections, n_channels = V.shape
+def householder_matrix(V: torch.Tensor, loop: bool=False) -> torch.Tensor:
+    n_reflections, num_dimensions = V.shape
 
-    I = torch.eye(n_channels, dtype=V.dtype, device=V.device)
+    I = torch.eye(num_dimensions, dtype=V.dtype, device=V.device)
 
     Q = I
 
-    for i in range(n_reflections):
-        v = V[i].view(n_channels, 1)
+    if loop:
+        for i in range(n_reflections):
+            v = V[i].view(num_dimensions, 1)
 
-        vvT = torch.matmul(v, v.t())
-        vTv = torch.matmul(v.t(), v)
-        Q = torch.matmul(Q, I - 2 * vvT / vTv)
+            vvT = torch.matmul(v, v.t())
+            vTv = torch.matmul(v.t(), v)
+            Q = torch.matmul(Q, I - 2 * vvT / vTv)
+    else:
+
+        V_t = V.unsqueeze(2).transpose(1, 2)
+        V = V.unsqueeze(2)
+        I = torch.eye(num_dimensions, dtype=V.dtype, device=V.device)
+
+        U = I - 2 * torch.bmm(V, V_t) / torch.bmm(V_t, V)
+        Q = torch.linalg.multi_dot(tuple(U))
+
 
     return Q
 
 
-def fast_householder_matrix(v: torch.Tensor, stride: int = 2) -> torch.Tensor:
+def householder_matrix_fast(v: torch.Tensor, stride: int = 2) -> torch.Tensor:
     """
     Fast product of a series of Householder matrices. This implementation is oriented to the one introducesd in:
     https://invertibleworkshop.github.io/accepted_papers/pdfs/10.pdf

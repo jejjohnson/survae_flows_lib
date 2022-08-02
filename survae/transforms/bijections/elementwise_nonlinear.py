@@ -1,3 +1,8 @@
+"""
+Splines Implementation:
+* https://github.com/bayesiains/nflows/blob/master/nflows/transforms/nonlinearities.py
+"""
+
 from typing import Tuple, Optional
 import math
 import numpy as np
@@ -117,7 +122,7 @@ class Sigmoid(Bijection):
         return x
 
 
-class Logit(Sigmoid):
+class Logit(Bijection):
     def __init__(self, temperature=1, eps=1e-6, catch_error: bool = False):
         super(Logit, self).__init__()
         self.eps = eps
@@ -142,35 +147,44 @@ class Logit(Sigmoid):
         x = torch.sigmoid(z)
         return x
 
-
-class InverseGaussCDF(Bijection):
-    def __init__(self, eps: float = 1e-6, catch_error: bool = False):
-        super(InverseGaussCDF, self).__init__()
+class InverseCDF(Bijection):
+    def __init__(self, dist: dist, eps: float = 1e-6, catch_error: bool = False):
+        super(InverseCDF).__init__()
+        self.dist = dist
         self.eps = eps
         self.catch_error = catch_error
-        self.base_dist = dist.Normal(loc=0, scale=1)
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         if self.catch_error:
-            assert torch.min(x) >= 0 and torch.max(x) <= 1, "x must be in [0,1]"
+            msg = "x must be in [0, 1]"
+            assert torch.min(x) >= 0 and torch.max(x) <= 1, msg
 
         x = torch.clamp(x, self.eps, 1 - self.eps)
 
         # forward transformation
-        z = self.base_dist.icdf(x)
+        z = self.dist.icdf(x)
 
-        # log determinant jacobian
-        ldj = -self.base_dist.log_prob(z)
+        # log determinant Jacobian
+        ldj = -self.dist.log_prob(z)
 
-        ldj = sum_except_batch(ldj)
+        ldj = ldj.clamp_min(-1 / self._eps)
 
-        return z, ldj
+        return z, sum_except_batch(ldj)
 
     def inverse(self, z: torch.Tensor) -> torch.Tensor:
 
-        x = self.base_dist.cdf(z)
+        x = self.dist.cdf(z)
 
         return x
+
+
+class InverseGaussCDF(InverseCDF):
+    def __init__(self, eps: float = 1e-6, catch_error: bool = False):
+        super(InverseCDF, self).__init__(
+            dist=dist.Normal(loc=0, scale=1),
+            eps=eps,
+            catch_error=catch_error
+        )
 
 
 class Softplus(Bijection):
@@ -355,7 +369,7 @@ class KernelLogisticCDF(GaussianMixtureCDF):
         return self._elementwise(z, inverse=True)
 
 
-class RQSplineCDF(Bijection):
+class SplineRQ(Bijection):
     def __init__(
         self,
         shape: Tuple,
@@ -442,26 +456,3 @@ class RQSplineCDF(Bijection):
         x, _ = self._spline(z, inverse=True)
 
         return x
-
-
-        # self.nflows_transform = PiecewiseRationalQuadraticCDF(
-        #     shape=shape,
-        #     num_bins=num_bins,
-        #     tails=tails,
-        #     tail_bound=tail_bound,
-        #     identity_init=identity_init,
-        #     min_bin_width=min_bin_width,
-        #     min_bin_height=min_bin_height,
-        #     min_derivative=min_derivative,
-        # )
-
-#     def forward(self, x):
-#         z, ldj = self.nflows_transform.forward(x)
-
-#         return z, ldj
-
-#     def inverse(self, z):
-
-#         x, _ = self.nflows_transform.inverse(z)
-
-#         return x

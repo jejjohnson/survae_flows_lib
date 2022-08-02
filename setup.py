@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="survae",
-    version="0.1",
+    version="0.2",
     author="Didrik Nielsen",
     author_email="didrik.nielsen@gmail.com",
     description="SurVAE Flows for PyTorch",
